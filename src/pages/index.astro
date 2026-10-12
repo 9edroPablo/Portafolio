@@ -1,11 +1,36 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import { sanityClient } from 'sanity:client';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// Consulta a Sanity para traer todos los posts ordenados por fecha
+const posts = await sanityClient.fetch(`*[_type == "post"] | order(publishedAt desc) {
+  _id,
+  title,
+  "slug": slug.current,
+  publishedAt,
+  summary
+}`);
 ---
 
 <Layout>
-	<Welcome />
+  <main class="max-w-4xl mx-auto p-8 font-sans">
+    <h1 class="text-4xl font-bold text-gray-900 mb-8">Mi Portafolio & Blog</h1>
+    
+    <section>
+      <h2 class="text-2xl font-semibold mb-6 border-b pb-2">Últimos Artículos</h2>
+      <div class="grid gap-6">
+        {posts.map((post) => (
+          <article class="p-6 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+            <h3 class="text-xl font-bold text-blue-600 mb-2">
+              <a href={`/blog/${post.slug}`}>{post.title}</a>
+            </h3>
+            <time class="text-sm text-gray-500 mb-3 block">
+              {new Date(post.publishedAt).toLocaleDateString('es-ES')}
+            </time>
+            <p class="text-gray-700">{post.summary}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  </main>
 </Layout>

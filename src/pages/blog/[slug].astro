@@ -1,0 +1,49 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { sanityClient } from 'sanity:client';
+import { PortableText } from 'astro-portabletext';
+
+export async function getStaticPaths() {
+  // 1. Agregamos "imageUrl" a la consulta para expandir el objeto de la imagen y obtener su URL
+  const posts = await sanityClient.fetch(`*[_type == "post"]{
+    "slug": slug.current,
+    title,
+    publishedAt,
+    body,
+    "imageUrl": mainImage.asset->url
+  }`);
+
+  return posts.map((post) => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+---
+
+<Layout>
+  <main class="max-w-3xl mx-auto p-8 font-sans">
+    <a href="/" class="text-blue-500 hover:underline mb-8 inline-block">&larr; Volver al inicio</a>
+    
+    <article>
+      <h1 class="text-4xl font-bold text-gray-900 mb-4">{post.title}</h1>
+      <time class="text-gray-500 mb-8 block">
+        {new Date(post.publishedAt).toLocaleDateString('es-ES')}
+      </time>
+      
+      {/* 2. Renderizamos la imagen solo si el artículo tiene una foto principal subida */}
+      {post.imageUrl && (
+        <img 
+          src={post.imageUrl} 
+          alt={post.title} 
+          class="w-full max-h-[450px] object-cover rounded-2xl mb-8 shadow-sm border border-gray-100"
+        />
+      )}
+      
+      <div class="prose prose-lg text-gray-800">
+        <PortableText value={post.body} />
+      </div>
+    </article>
+  </main>
+</Layout>
