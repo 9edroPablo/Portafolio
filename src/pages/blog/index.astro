@@ -1,0 +1,31 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { sanityClient } from 'sanity:client';
+
+// Consulta para traer TODOS los posts
+const posts = await sanityClient.fetch(`*[_type == "post"] | order(publishedAt desc) {
+  _id,
+  title,
+  "slug": slug.current,
+  publishedAt,
+  summary
+}`);
+---
+
+<Layout>
+  <main class="max-w-5xl mx-auto px-6 py-12 font-sans">
+    <h1 class="text-4xl font-extrabold text-gray-900 mb-4">Mi Blog</h1>
+    <p class="text-xl text-gray-600 mb-10">Aquí comparto mis aprendizajes, tutoriales y experiencias sobre desarrollo web.</p>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {posts.map((post) => (
+        <article class="flex flex-col p-8 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+          <h2 class="text-2xl font-bold mb-3"><a href={`/blog/${post.slug}`} class="group-hover:text-blue-600">{post.title}</a></h2>
+          <time class="text-sm font-semibold text-blue-500 mb-4">{new Date(post.publishedAt).toLocaleDateString('es-ES')}</time>
+          <p class="text-gray-600 flex-grow mb-6">{post.summary}</p>
+          <a href={`/blog/${post.slug}`} class="mt-auto text-blue-600 font-semibold hover:text-blue-800">Leer artículo &rarr;</a>
+        </article>
+      ))}
+    </div>
+  </main>
+</Layout>

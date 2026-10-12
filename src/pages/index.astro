@@ -2,35 +2,42 @@
 import Layout from '../layouts/Layout.astro';
 import { sanityClient } from 'sanity:client';
 
-// Consulta a Sanity para traer todos los posts ordenados por fecha
-const posts = await sanityClient.fetch(`*[_type == "post"] | order(publishedAt desc) {
-  _id,
-  title,
+// Solo traemos los 2 artículos más recientes para la portada
+const recentPosts = await sanityClient.fetch(`*[_type == "post"] | order(publishedAt desc)[0...2] {
   "slug": slug.current,
-  publishedAt,
+  title,
   summary
 }`);
 ---
 
 <Layout>
-  <main class="max-w-4xl mx-auto p-8 font-sans">
-    <h1 class="text-4xl font-bold text-gray-900 mb-8">Mi Portafolio & Blog</h1>
+  <main class="max-w-5xl mx-auto px-6 py-12 font-sans">
     
-    <section>
-      <h2 class="text-2xl font-semibold mb-6 border-b pb-2">Últimos Artículos</h2>
-      <div class="grid gap-6">
-        {posts.map((post) => (
-          <article class="p-6 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <h3 class="text-xl font-bold text-blue-600 mb-2">
-              <a href={`/blog/${post.slug}`}>{post.title}</a>
-            </h3>
-            <time class="text-sm text-gray-500 mb-3 block">
-              {new Date(post.publishedAt).toLocaleDateString('es-ES')}
-            </time>
-            <p class="text-gray-700">{post.summary}</p>
-          </article>
-        ))}
+    <!-- SECCIÓN HERO -->
+    <section class="py-20 flex flex-col sm:flex-row items-center gap-10">
+      <div>
+        <h1 class="text-5xl font-extrabold tracking-tight mb-4 text-gray-900">
+          Hola, soy <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Pedro Pablo</span>
+        </h1>
+        <p class="text-xl text-gray-600 mb-8 max-w-2xl leading-relaxed">
+          Desarrollador frontend construyendo experiencias web rápidas, accesibles y con un diseño impecable.
+        </p>
+        <div class="flex gap-4">
+          <a href="https://github.com/9edroPablo" target="_blank" class="px-6 py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800">Ver GitHub</a>
+          <a href="/blog" class="px-6 py-3 bg-white border border-gray-200 text-gray-900 font-medium rounded-lg hover:bg-gray-50">Leer el Blog</a>
+        </div>
       </div>
     </section>
+
+    <!-- TECNOLOGÍAS -->
+    <section class="mb-24">
+      <h2 class="text-2xl font-bold mb-6 text-gray-900">Mi Stack</h2>
+      <div class="flex flex-wrap gap-3">
+        <span class="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold">Astro</span>
+        <span class="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold">Tailwind CSS</span>
+        <span class="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold">Sanity CMS</span>
+      </div>
+    </section>
+
   </main>
 </Layout>
