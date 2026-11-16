@@ -3,17 +3,23 @@ import '../styles/global.css';
 ---
 
 <!doctype html>
-<html lang="en">
-	<header class="max-w-5xl mx-auto px-6 py-6 flex justify-between items-center">
-      <a href="/" class="text-2xl font-black tracking-tighter text-gray-900">
-        Pedro<span class="text-blue-600">.dev</span>
-      </a>
-      <nav class="flex gap-6 font-semibold text-gray-600">
-        <a href="/" class="hover:text-blue-600 transition-colors">Portafolio</a>
-        <a href="/blog" class="hover:text-blue-600 transition-colors">Blog</a>
-      </nav>
-    </header>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Pedro.dev</title>
+	</head>
 	<body>
+		<header class="max-w-5xl mx-auto px-6 py-6 flex justify-between items-center">
+			<a href="/" class="text-2xl font-black tracking-tighter text-gray-900">
+				Pedro<span class="text-blue-600">.dev</span>
+			</a>
+			<nav class="flex gap-6 font-semibold text-gray-600">
+				<a href="/" class="hover:text-blue-600 transition-colors">Portafolio</a>
+				<a href="/blog" class="hover:text-blue-600 transition-colors">Blog</a>
+			</nav>
+		</header>
+		
 		<slot />
 	</body>
 </html>

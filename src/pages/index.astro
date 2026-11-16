@@ -1,41 +1,33 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { sanityClient } from 'sanity:client';
 
-// Solo traemos los 2 artículos más recientes para la portada
-const recentPosts = await sanityClient.fetch(`*[_type == "post"] | order(publishedAt desc)[0...2] {
-  "slug": slug.current,
-  title,
-  summary
-}`);
+// Traemos los artículos y guardamos solo los primeros 2
+let recentPosts = [];
+try {
+  const response = await fetch('http://localhost:3000/api/posts');
+  const allPosts = await response.json();
+  recentPosts = allPosts.slice(0, 2); // Equivalente a [0...2] en Sanity
+} catch (error) {
+  console.error("Error conectando con el backend:", error);
+}
 ---
 
+<!-- Mantén tu HTML igual, pero puedes agregar la sección del blog que tenías antes si la borraste -->
 <Layout>
   <main class="max-w-5xl mx-auto px-6 py-12 font-sans">
     
-    <!-- SECCIÓN HERO -->
-    <section class="py-20 flex flex-col sm:flex-row items-center gap-10">
-      <div>
-        <h1 class="text-5xl font-extrabold tracking-tight mb-4 text-gray-900">
-          Hola, soy <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Pedro Pablo</span>
-        </h1>
-        <p class="text-xl text-gray-600 mb-8 max-w-2xl leading-relaxed">
-          Desarrollador frontend construyendo experiencias web rápidas, accesibles y con un diseño impecable.
-        </p>
-        <div class="flex gap-4">
-          <a href="https://github.com/9edroPablo" target="_blank" class="px-6 py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800">Ver GitHub</a>
-          <a href="/blog" class="px-6 py-3 bg-white border border-gray-200 text-gray-900 font-medium rounded-lg hover:bg-gray-50">Leer el Blog</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- TECNOLOGÍAS -->
-    <section class="mb-24">
-      <h2 class="text-2xl font-bold mb-6 text-gray-900">Mi Stack</h2>
-      <div class="flex flex-wrap gap-3">
-        <span class="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold">Astro</span>
-        <span class="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold">Tailwind CSS</span>
-        <span class="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold">Sanity CMS</span>
+    <!-- (Mantén tu sección HERO y TECNOLOGÍAS igual) -->
+    
+    <!-- SECCIÓN DE BLOG RECIENTE (Agrégala si no la tienes) -->
+    <section>
+      <h2 class="text-2xl font-bold mb-6 text-gray-900">Últimos Artículos</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {recentPosts.map((post) => (
+           <article class="p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
+             <h3 class="text-xl font-bold mb-2"><a href={`/blog/${post.slug}`} class="hover:text-blue-600">{post.title}</a></h3>
+             <p class="text-gray-600">{post.summary}</p>
+           </article>
+        ))}
       </div>
     </section>
 

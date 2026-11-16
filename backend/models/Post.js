@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// Definimos la estructura que tendrá cada artículo en la base de datos
 const postSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -9,7 +8,7 @@ const postSchema = new mongoose.Schema({
   slug: {
     type: String,
     required: true,
-    unique: true // No pueden haber dos posts con la misma URL
+    unique: true
   },
   summary: {
     type: String,
@@ -19,11 +18,45 @@ const postSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // Estado del post para controlar el flujo de publicación
+  status: {
+    type: String,
+    enum: ['draft', 'published', 'archived'],
+    default: 'draft' // Se guarda como borrador por defecto
+  },
   publishedAt: {
     type: Date,
-    default: Date.now // Si no le pasamos fecha, pone la de hoy
-  }
-});
+    default: Date.now
+  },
+  
+  // Tecnologías
+  technologies: [{
+    type: String
+  }],
 
-// Exportamos el modelo
+  // Imágenes de Cloudinary
+  coverImage: {
+    type: String,
+    default: ''
+  },
+  contentImage: {
+    type: String,
+    default: ''
+  },
+
+  // Estilos dinámicos
+  bgColor: {
+    type: String,
+    default: '#ffffff'
+  },
+  textColor: {
+    type: String,
+    default: '#1f2937'
+  },
+  titleFont: {
+    type: String,
+    default: 'sans-serif'
+  }
+}, { timestamps: true });
+
 module.exports = mongoose.model('Post', postSchema);
