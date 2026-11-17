@@ -26,3 +26,12 @@ pnpm-debug.log*
 # Backend
 backend/.env
 backend/node_modules/
+
+# Variables de entorno adicionales (por si creas .env.local o .env.development)
+.env.*
+backend/.env.*
+!.env.example
+!backend/.env.example
+
+# Archivos temporales de contexto de IA (opcional, si no quieres subir el historial del chat a GitHub)
+contexto-gemini.md
