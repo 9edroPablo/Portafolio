@@ -56,7 +56,16 @@ const postSchema = new mongoose.Schema({
   titleFont: {
     type: String,
     default: 'sans-serif'
-  }
+  },
+
+  // Métricas de lecturas
+  views: {
+    type: Number,
+    default: 0
+  },
+  viewedBy: [{
+    type: String
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Post', postSchema);

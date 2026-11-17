@@ -91,6 +91,17 @@ if (!post || post.error) {
   </div>
 </Layout>
 
+<script define:vars={{ API_BASE, slug }}>
+  // Petición POST silenciosa para contabilizar la lectura única por IP
+  if (slug) {
+    fetch(`${API_BASE}/api/posts/${encodeURIComponent(slug)}/view`, {
+      method: 'POST'
+    }).catch(() => {
+      // Fallo silencioso para no afectar la experiencia del lector
+    });
+  }
+</script>
+
 <style define:vars={{
   bgColor: post.bgColor || '#ffffff',
   textColor: post.textColor || '#1f2937',

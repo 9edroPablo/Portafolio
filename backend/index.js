@@ -6,11 +6,15 @@ require('dotenv').config();
 // Configuración de almacenamiento con Cloudinary
 const upload = require('./config/cloudinary');
 
-// Importamos el modelo de Post
+// Importamos el modelo de Post y de Métricas del Sitio
 const Post = require('./models/Post');
+const SiteMetric = require('./models/SiteMetric');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Habilitamos trust proxy para obtener correctamente req.ip detrás de proxies en producción
+app.set('trust proxy', true);
 
 // CORS configurable para producción (por defecto permite cualquier origen en desarrollo)
 app.use(cors({
@@ -141,6 +145,76 @@ app.delete('/api/posts/:id', requireAdminAuth, async (req, res) => {
     res.json({ message: 'Artículo eliminado correctamente', id: req.params.id });
   } catch (error) {
     res.status(500).json({ error: 'Error al eliminar el artículo' });
+  }
+});
+
+// 6. REGISTRAR LECTURA ÚNICA POR IP (Métricas del blog)
+app.post('/api/posts/:slug/view', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const userIp = req.ip || req.socket?.remoteAddress || 'unknown';
+
+    const post = await Post.findOne({ slug });
+    if (!post) {
+      return res.status(404).json({ error: 'Artículo no encontrado' });
+    }
+
+    if (!Array.isArray(post.viewedBy)) {
+      post.viewedBy = [];
+    }
+
+    // Verificamos si la IP ya está registrada en viewedBy
+    if (!post.viewedBy.includes(userIp)) {
+      post.views = (post.views || 0) + 1;
+      post.viewedBy.push(userIp);
+      await post.save();
+    }
+
+    res.json({ views: post.views });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al registrar la lectura' });
+  }
+});
+
+// 7. REGISTRAR VISITA GENERAL A LA PÁGINA
+app.post('/api/metrics/visit', async (req, res) => {
+  try {
+    const userIp = req.ip || req.socket?.remoteAddress || 'unknown';
+
+    let metric = await SiteMetric.findOne({ key: 'global' });
+    if (!metric) {
+      metric = new SiteMetric({ key: 'global', totalVisits: 0, visitedBy: [] });
+    }
+
+    if (!Array.isArray(metric.visitedBy)) {
+      metric.visitedBy = [];
+    }
+
+    if (!metric.visitedBy.includes(userIp)) {
+      metric.totalVisits = (metric.totalVisits || 0) + 1;
+      metric.visitedBy.push(userIp);
+      await metric.save();
+    }
+
+    res.json({ totalVisits: metric.totalVisits });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al registrar visita a la página' });
+  }
+});
+
+// 8. OBTENER MÉTRICAS GLOBALES PARA EL PANEL /ADMIN
+app.get('/api/metrics', async (req, res) => {
+  try {
+    const metric = await SiteMetric.findOne({ key: 'global' });
+    const allPosts = await Post.find({}, 'views');
+    const totalPostViews = allPosts.reduce((sum, p) => sum + (p.views || 0), 0);
+
+    res.json({
+      totalVisits: metric ? metric.totalVisits : 0,
+      totalPostViews
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener las métricas' });
   }
 });
 

@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000';
 ---
 
 <!doctype html>
@@ -21,6 +22,15 @@ import '../styles/global.css';
 		</header>
 		
 		<slot />
+
+		<script define:vars={{ API_BASE }}>
+			// Registrar visita única a la página (solo en rutas públicas, excluyendo /admin)
+			if (!window.location.pathname.startsWith('/admin')) {
+				fetch(`${API_BASE}/api/metrics/visit`, {
+					method: 'POST'
+				}).catch(() => {});
+			}
+		</script>
 	</body>
 </html>
 

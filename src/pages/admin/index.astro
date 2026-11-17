@@ -102,6 +102,24 @@ import Layout from '../../layouts/Layout.astro';
 
     <!-- SECCIÓN 2: GESTIÓN DE ARTÍCULOS Y PESTAÑAS -->
     <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+      <!-- Tarjetas de Métricas Globales (Solo visibles en /admin) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <div class="flex items-center justify-between p-5 rounded-xl bg-blue-50 border border-blue-100">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-blue-600">Visitas Totales a la Página</p>
+            <p id="total-site-visits" class="text-3xl font-extrabold text-gray-900 mt-1">0</p>
+          </div>
+          <span class="text-3xl">🌐</span>
+        </div>
+        <div class="flex items-center justify-between p-5 rounded-xl bg-indigo-50 border border-indigo-100">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-indigo-600">Vistas Totales en Artículos</p>
+            <p id="total-post-views" class="text-3xl font-extrabold text-gray-900 mt-1">0</p>
+          </div>
+          <span class="text-3xl">📖</span>
+        </div>
+      </div>
+
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h2 class="text-xl font-bold text-gray-900">Gestión de Artículos</h2>
         
@@ -156,8 +174,24 @@ import Layout from '../../layouts/Layout.astro';
   const tabButtons = document.querySelectorAll('.tab-btn');
   const postsContainer = document.getElementById('posts-container') as HTMLElement;
   const listFeedback = document.getElementById('list-feedback') as HTMLElement;
+  const totalSiteVisitsEl = document.getElementById('total-site-visits') as HTMLElement;
+  const totalPostViewsEl = document.getElementById('total-post-views') as HTMLElement;
 
   let currentStatus = 'draft';
+
+  // Función para cargar las métricas globales en el panel de administración
+  async function loadMetrics() {
+    try {
+      const response = await fetch(`${API_BASE}/api/metrics`);
+      if (response.ok) {
+        const data = await response.json();
+        if (totalSiteVisitsEl) totalSiteVisitsEl.textContent = String(data.totalVisits ?? 0);
+        if (totalPostViewsEl) totalPostViewsEl.textContent = String(data.totalPostViews ?? 0);
+      }
+    } catch (error) {
+      // Fallo silencioso si el endpoint aún no responde
+    }
+  }
 
   // Persistencia opcional de la clave de administrador en sessionStorage
   if (adminKeyInput) {
@@ -207,6 +241,7 @@ import Layout from '../../layouts/Layout.astro';
 
   // Función para cargar los artículos según el estado de la pestaña activa
   async function loadPosts(status: string) {
+    loadMetrics();
     postsContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Cargando artículos...</p>`;
 
     try {
@@ -309,12 +344,17 @@ import Layout from '../../layouts/Layout.astro';
           </button>
         `;
 
+        const viewsCount = post.views || 0;
+
         return `
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl border border-gray-200 hover:border-gray-300 transition-all bg-white">
             <div class="space-y-1">
-              <div class="flex items-center gap-3">
+              <div class="flex flex-wrap items-center gap-3">
                 <h3 class="text-lg font-bold text-gray-900">${post.title}</h3>
                 <span class="text-xs text-gray-400 font-mono">/${post.slug}</span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200" title="Lecturas únicas registradas">
+                  📊 ${viewsCount} ${viewsCount === 1 ? 'vista' : 'vistas'}
+                </span>
               </div>
               <p class="text-sm text-gray-600 line-clamp-2">${post.summary}</p>
               <div class="text-xs text-gray-400 pt-1">Fecha: ${dateStr}</div>
