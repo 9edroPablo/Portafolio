@@ -1,42 +1,116 @@
 ---
+export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 
-// 1. Astro ejecuta esto para saber cuántas páginas de artículos debe crear
-export async function getStaticPaths() {
-  // Pedimos todos los artículos a tu backend
-  const response = await fetch('http://localhost:3000/api/posts');
-  const posts = await response.json();
+const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000';
+const { slug } = Astro.params;
 
-  // Le decimos a Astro que cree una ruta por cada 'slug' (ej. /blog/primer-post-mongodb)
-  return posts.map((post) => {
-    return {
-      params: { slug: post.slug }, // Define la URL
-      props: { post },             // Le pasa los datos del artículo a la página
-    };
-  });
+let post = null;
+try {
+  // Consultamos los artículos publicados filtrando por slug
+  const response = await fetch(`${API_BASE}/api/posts?status=published&slug=${encodeURIComponent(slug || '')}`);
+  const contentType = response.headers.get("content-type");
+  if (response.ok && contentType && contentType.includes("application/json")) {
+    const posts = await response.json();
+    if (Array.isArray(posts)) {
+      post = posts.find((p) => p.slug === slug) || null;
+    }
+  }
+} catch (error) {
+  console.error("Error conectando con el servidor backend:", error);
 }
 
-// 2. Recibimos los datos del artículo específico para mostrarlo
-const { post } = Astro.props;
+if (!post || post.error) {
+  return Astro.redirect('/blog');
+}
 ---
 
 <Layout>
-  <main class="max-w-3xl mx-auto p-8 font-sans mt-10">
-    <a href="/blog" class="text-blue-600 hover:underline mb-8 inline-block font-semibold">&larr; Volver al blog</a>
-    
-    <article class="bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-gray-100">
-      <h1 class="text-4xl md:text-5xl font-extrabold mb-6 text-gray-900 leading-tight">
-        {post.title}
-      </h1>
+  <div class="post-theme-wrapper min-h-screen transition-colors">
+    <main class="max-w-3xl mx-auto px-6 py-12">
+      <a href="/blog" class="back-link inline-block mb-8 font-semibold hover:underline">
+        &larr; Volver al blog
+      </a>
       
-      <time class="text-gray-500 mb-8 block font-medium">
-        Publicado el {new Date(post.publishedAt).toLocaleDateString('es-ES')}
-      </time>
-      
-      <!-- Aquí renderizamos el contenido del artículo -->
-      <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
-        {post.content}
-      </div>
-    </article>
-  </main>
+      <article class="space-y-8">
+        <header class="space-y-4">
+          <h1 class="post-title text-4xl md:text-5xl font-extrabold leading-tight">
+            {post.title}
+          </h1>
+          
+          <time class="block text-sm opacity-75 font-medium">
+            Publicado el {new Date(post.publishedAt).toLocaleDateString('es-ES', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric'
+            })}
+          </time>
+
+          {Array.isArray(post.technologies) && post.technologies.length > 0 && (
+            <div class="flex flex-wrap gap-2 pt-2">
+              {post.technologies.map((tech: string) => (
+                <span class="tech-badge px-3 py-1 rounded-md text-xs font-semibold">
+                  {tech}
+                </span>
+              ))}
+            </div>
+          )}
+        </header>
+
+        {post.coverImage && (
+          <div class="overflow-hidden rounded-2xl shadow-sm">
+            <img
+              src={post.coverImage}
+              alt={`Portada de ${post.title}`}
+              class="w-full max-h-[450px] object-cover"
+            />
+          </div>
+        )}
+
+        {post.summary && (
+          <p class="text-xl font-medium opacity-90 leading-relaxed border-l-4 border-current pl-4">
+            {post.summary}
+          </p>
+        )}
+        
+        <div class="post-content text-lg leading-relaxed whitespace-pre-line">
+          {post.content}
+        </div>
+
+        {post.contentImage && (
+          <div class="overflow-hidden rounded-2xl shadow-sm pt-4">
+            <img
+              src={post.contentImage}
+              alt={`Imagen de contenido de ${post.title}`}
+              class="w-full max-h-[450px] object-cover"
+            />
+          </div>
+        )}
+      </article>
+    </main>
+  </div>
 </Layout>
+
+<style define:vars={{
+  bgColor: post.bgColor || '#ffffff',
+  textColor: post.textColor || '#1f2937',
+  titleFont: post.titleFont || 'sans-serif'
+}}>
+  .post-theme-wrapper {
+    background-color: var(--bgColor);
+    color: var(--textColor);
+    font-family: var(--titleFont), sans-serif;
+  }
+  .post-title {
+    font-family: var(--titleFont), sans-serif;
+    color: var(--textColor);
+  }
+  .back-link {
+    color: var(--textColor);
+    opacity: 0.85;
+  }
+  .tech-badge {
+    background-color: rgba(128, 128, 128, 0.2);
+    color: var(--textColor);
+  }
+</style>

@@ -12,8 +12,25 @@ const Post = require('./models/Post');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// CORS configurable para producción (por defecto permite cualquier origen en desarrollo)
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*'
+}));
 app.use(express.json());
+
+// Middleware de protección opcional para rutas de escritura en producción
+// Si defines ADMIN_SECRET en backend/.env, exigirá el header 'x-admin-key'
+function requireAdminAuth(req, res, next) {
+  const adminSecret = process.env.ADMIN_SECRET;
+  if (!adminSecret) {
+    return next(); // En desarrollo local sin ADMIN_SECRET configurado, permite el paso
+  }
+  const providedKey = req.headers['x-admin-key'];
+  if (providedKey !== adminSecret) {
+    return res.status(401).json({ error: 'No autorizado: Clave de administrador inválida o faltante.' });
+  }
+  next();
+}
 
 // Conexión a MongoDB
 mongoose.connect(process.env.MONGODB_URI)
@@ -24,16 +41,31 @@ mongoose.connect(process.env.MONGODB_URI)
 // RUTAS DE LA API PARA EL BLOG
 // ==========================================
 
-// 1. OBTENER todos los artículos (Con filtro opcional por estado para el panel admin)
+// 1. OBTENER todos los artículos (Con filtro opcional por estado y slug)
 app.get('/api/posts', async (req, res) => {
   try {
-    const { status } = req.query;
-    const filter = status ? { status } : {};
+    const { status, slug } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+    if (slug) filter.slug = slug;
     
     const posts = await Post.find(filter).sort({ publishedAt: -1 });
     res.json(posts);
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener los artículos' });
+  }
+});
+
+// 1.b OBTENER un artículo publicado por SLUG (Ruta para la vista pública /blog/[slug])
+app.get('/api/posts/slug/:slug', async (req, res) => {
+  try {
+    const post = await Post.findOne({ slug: req.params.slug, status: 'published' });
+    if (!post) {
+      return res.status(404).json({ error: 'Artículo no encontrado' });
+    }
+    res.json(post);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener el artículo por slug' });
   }
 });
 
@@ -51,7 +83,7 @@ app.get('/api/posts/:id', async (req, res) => {
 });
 
 // 3. CREAR un nuevo artículo (Soporta procesamiento de FormData e imágenes)
-app.post('/api/posts', upload.fields([
+app.post('/api/posts', requireAdminAuth, upload.fields([
   { name: 'coverImage', maxCount: 1 },
   { name: 'contentImage', maxCount: 1 }
 ]), async (req, res) => {
@@ -83,7 +115,7 @@ app.post('/api/posts', upload.fields([
 });
 
 // 4. ACTUALIZAR un artículo (Requerido para cambiar de Borrador a Publicado/Archivado)
-app.put('/api/posts/:id', async (req, res) => {
+app.put('/api/posts/:id', requireAdminAuth, async (req, res) => {
   try {
     const updatedPost = await Post.findByIdAndUpdate(
       req.params.id,
@@ -99,19 +131,16 @@ app.put('/api/posts/:id', async (req, res) => {
   }
 });
 
-// 5. RUTA TEMPORAL DE PRUEBA
-app.get('/api/crear-prueba', async (req, res) => {
+// 5. ELIMINAR un artículo por ID
+app.delete('/api/posts/:id', requireAdminAuth, async (req, res) => {
   try {
-    const postPrueba = new Post({
-      title: 'Mi primer post desde Node y MongoDB',
-      slug: 'primer-post-mongodb',
-      summary: 'Este es un resumen de prueba. Hemos reemplazado Sanity con éxito.',
-      content: 'Aquí iría todo el contenido de tu artículo.'
-    });
-    await postPrueba.save();
-    res.send('¡Post de prueba creado con éxito!');
+    const deletedPost = await Post.findByIdAndDelete(req.params.id);
+    if (!deletedPost) {
+      return res.status(404).json({ error: 'Artículo no encontrado' });
+    }
+    res.json({ message: 'Artículo eliminado correctamente', id: req.params.id });
   } catch (error) {
-    res.status(500).send('Error creando post de prueba: ' + error.message);
+    res.status(500).json({ error: 'Error al eliminar el artículo' });
   }
 });
 

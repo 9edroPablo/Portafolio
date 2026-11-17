@@ -1,11 +1,12 @@
 ---
 export const prerender = false;
 
+const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000';
 const { id } = Astro.params;
 
 let post = null;
 try {
-  const response = await fetch(`http://localhost:3000/api/posts/${id}`);
+  const response = await fetch(`${API_BASE}/api/posts/${id}`);
   
   const contentType = response.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
